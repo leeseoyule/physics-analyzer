@@ -16,6 +16,7 @@ st.markdown("""
 .stApp {
     background-color: #FFFDF0;
     color: #2C2C2C;
+    /* 고양이 커서 지정 + 뒤에 32 32 같은 픽셀 크기를 지정하여 브라우저에 크기 전달 */
     cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, auto;
 }
 
