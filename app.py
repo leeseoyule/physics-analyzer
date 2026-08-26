@@ -5,10 +5,10 @@ import json
 import math
 
 # 페이지 설정
-st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
+st.set_page_config(page_title="물리 시뮬레이터", page_icon="🪨", layout="wide")
 
 # ==========================================
-# 🎨 UI/UX 스타일 (PC 고양이 커서 + 말풍선 기능이 있는 우측 하단 고양이 마스코트)
+# 🎨 UI/UX 스타일 (PC 고양이 커서 + 순수 CSS 기반 말풍선 고양이 마스코트)
 # ==========================================
 st.markdown("""
 <style>
@@ -50,16 +50,20 @@ h1, h2, h3 {
     color: #333333;
 }
 
-/* 우측 하단 고정 마스코트 컨테이너 */
-.floating-cat-container {
+/* 우측 하단 고정 마스코트 전체 래퍼 */
+.floating-cat-wrapper {
     position: fixed;
     bottom: 20px;
     right: 20px;
     z-index: 99999;
-    cursor: pointer;
 }
 
-/* 말풍선 스타일 */
+/* 체크박스는 숨김 */
+.floating-cat-wrapper input[type="checkbox"] {
+    display: none;
+}
+
+/* 말풍선 기본 스타일 (숨김 상태) */
 .speech-bubble {
     position: absolute;
     bottom: 60px;
@@ -73,7 +77,7 @@ h1, h2, h3 {
     font-weight: bold;
     color: #333333;
     white-space: nowrap;
-    display: none; /* 평소엔 숨김 */
+    display: none;
     animation: fadeIn 0.2s ease;
 }
 
@@ -96,8 +100,8 @@ h1, h2, h3 {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* 우측 하단 고양이 이미지 마스코트 스타일 */
-.floating-cat-mascot {
+/* 고양이 마스코트 버튼 디자인 (라벨을 버튼처럼 사용) */
+.cat-label {
     background-color: white;
     padding: 8px 14px;
     border-radius: 20px;
@@ -109,6 +113,7 @@ h1, h2, h3 {
     font-weight: bold;
     font-size: 14px;
     color: #333333;
+    cursor: pointer;
     animation: bounce 2s infinite;
 }
 
@@ -117,45 +122,31 @@ h1, h2, h3 {
     50% { transform: translateY(-5px); }
 }
 
-.floating-cat-mascot img {
+.cat-label img {
     width: 32px;
     height: 32px;
     object-fit: contain;
 }
+
+/* 체크박스가 체크되면 말풍선 표시 */
+.floating-cat-wrapper input[type="checkbox"]:checked ~ .speech-bubble {
+    display: block;
+}
 </style>
 
-<!-- 우측 하단 고양이 마스코트 + 말풍선 HTML -->
-<div class="floating-cat-container" id="cat-container">
-    <div class="speech-bubble" id="cat-bubble">나는 양자역학 고양이야!</div>
-    <div class="floating-cat-mascot">
+<!-- CSS 체크박스 트릭을 이용한 순수 반응형 고양이 위젯 -->
+<div class="floating-cat-wrapper">
+    <input type="checkbox" id="cat-toggle">
+    <div class="speech-bubble">나는 양자역학 고양이야!</div>
+    <label for="cat-toggle" class="cat-label">
         <img src="https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png" alt="고양이 마스코트">
         <div>물리 도우미 대기 중!</div>
-    </div>
+    </label>
 </div>
-
-<script>
-const container = document.getElementById('cat-container');
-const bubble = document.getElementById('cat-bubble');
-
-// 고양이를 클릭했을 때 말풍선 토글
-container.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (bubble.style.display === 'block') {
-        bubble.style.display = 'none';
-    } else {
-        bubble.style.display = 'block';
-    }
-});
-
-// 화면의 다른 곳을 누르면 말풍선 닫기
-window.addEventListener('click', () => {
-    bubble.style.display = 'none';
-});
-</script>
 """, unsafe_allow_html=True)
 
 # 상단 안내 문구
-st.title("스마트 벡터 물리 & 힘 시뮬레이터 🐱")
+st.title("물리 & 힘 시뮬레이터")
 st.write("어떤 물체 사진이든 업로드하고, 무게를 설정한 뒤 **외력의 크기(최대 2000N)**와 각도에 따른 종합적인 힘의 상쇄 및 벡터 분해 시뮬레이션을 확인해보세요!")
 
 try:
