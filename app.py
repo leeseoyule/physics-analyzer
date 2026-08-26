@@ -8,7 +8,7 @@ import math
 st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
 
 # ==========================================
-# 🎨 UI/UX: PC는 이미지 커서, 모바일은 터치 고양이 이모지 적용
+# 🎨 UI/UX 스타일 (PC 고양이 커서 + 모바일/PC 겸용 우측 하단 고양이 이미지 마스코트)
 # ==========================================
 st.markdown("""
 <style>
@@ -50,51 +50,43 @@ h1, h2, h3 {
     color: #333333;
 }
 
-/* 모바일 전용 손가락 따라다니는 고양이 이모지 스타일 */
-#mobile-cat {
+/* 우측 하단 고정 마스코트 고양이 이미지 스타일 */
+.floating-cat-mascot {
     position: fixed;
-    pointer-events: none;
-    font-size: 32px;
+    bottom: 20px;
+    right: 20px;
+    background-color: white;
+    padding: 8px 14px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 2px solid #FFB703;
     z-index: 99999;
-    transform: translate(-50%, -50%);
-    display: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    font-size: 14px;
+    color: #333333;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.floating-cat-mascot img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
 }
 </style>
 
-<!-- 모바일 터치 추적용 고양이 이모지 -->
-<div id="mobile-cat">🐱</div>
-
-<script>
-// 모바일 기기인지 간단히 확인
-const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-
-if (isMobile) {
-    const mCat = document.getElementById('mobile-cat');
-
-    // 손가락으로 화면을 터치하고 움직일 때
-    window.addEventListener('touchmove', (e) => {
-        if (e.touches.length > 0) {
-            mCat.style.display = 'block';
-            mCat.style.left = e.touches[0].clientX + 'px';
-            mCat.style.top = e.touches[0].clientY + 'px';
-        }
-    }, { passive: true });
-
-    // 화면을 터치하는 순간
-    window.addEventListener('touchstart', (e) => {
-        if (e.touches.length > 0) {
-            mCat.style.display = 'block';
-            mCat.style.left = e.touches[0].clientX + 'px';
-            mCat.style.top = e.touches[0].clientY + 'px';
-        }
-    }, { passive: true });
-
-    // 터치를 뗄 때 고양이 숨기기
-    window.addEventListener('touchend', () => {
-        mCat.style.display = 'none';
-    });
-}
-</script>
+<!-- 우측 하단 고양이 마스코트 이미지 (Raw 링크 적용) -->
+<div class="floating-cat-mascot">
+    <img src="https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png" alt="고양이 마스코트">
+    <div>물리 도우미 대기 중!</div>
+</div>
 """, unsafe_allow_html=True)
 
 # 상단 안내 문구
