@@ -1,128 +1,110 @@
+%%writefile app.py
 import streamlit as st
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import google.generativeai as genai
+import json
 
-# 페이지 설정
-st.set_page_config(
-    page_title="세상의 모든 물체: 2D 스마트 안전 벡터 분석기",
-    page_icon="📐",
-    layout="centered"
-)
+# 앱 타이틀 및 소개
+st.title("🪨 세상의 모든 물체: 물리 & 힘 분석기 (AI 스마트 버전)")
+st.write("사진을 올리고 무게를 직접 입력하거나, 모를 경우 **AI 멀티모달 분석**에 맡겨보세요!")
 
-st.title("세상의 모든 물체: 물리 분석기")
-st.write("지금 내가 보고 있는 물체에는 어떤 힘이 작용하고 있는지 궁금하지 않으셨나요?")
-st.write("사진을 올리면 **Gemini AI**가 물리 법칙을 계산하고, 시각화해 드립니다!")
-
-# Streamlit Secrets에서 API 키 불러오기
-try:
-    api_key = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    api_key = None
-
-st.markdown("---")
-
-# 🎛️ 초기조건 설정 섹션 (사진 업로드 전 항상 상단 배치)
-st.subheader("초기조건 설정")
-st.write("(물체의 상태를 알고 있다면 미리 입력해주세요. 모를 경우, '모름'으로 두면 AI가 알아서 분석합니다!)")
-
-col1, col2 = st.columns(2)
-with col1:
-    input_mass = st.text_input("물체의 무게 / 질량 (예: 5kg, 1.5톤)", value="모름")
-with col2:
-    input_state = st.selectbox(
-        "현재 운동 상태",
-        [
-            "모름 (AI가 사진 보고 추정)", 
-            "가만히 멈춰있음 / 정지 상태", 
-            "바닥이나 책상 위에 놓여 있음", 
-            "공중에서 떨어지는 중 (자유 낙하)", 
-            "누가 밀거나 힘을 가하고 있는 중"
-        ]
-    )
-
-st.markdown("---")
+# 사이드바 또는 상단에 API 키 입력 설정 (Gemini 연동용)
+with st.sidebar:
+    st.subheader("🔑 AI 설정")
+    api_key = st.text_input("Google Gemini API 키 입력", type="password")
+    st.caption("AI 자동 추정 기능을 쓰려면 Google AI Studio에서 발급받은 API 키를 입력하세요.")
 
 # 사진 업로드 기능
-uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요!", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요! (예: 흔들바위, 치이카와 인형 등)", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # 원본 이미지 열기
-    image = Image.open(uploaded_file).convert("RGB")
+    image = Image.open(uploaded_file)
     
     st.markdown("---")
+    st.subheader("⚙️ 물리 변수 설정")
     
-    if st.button("🚀 2D 벡터 힘 분석 및 시뮬레이션 실행"):
-        if not api_key:
-            st.warning("⚠️ Streamlit Secrets에 API 키가 설정되어 있지 않습니다!")
-        else:
-            with st.spinner("🤖 사용자가 입력한 초기조건과 AI 비전 분석을 결합하여 2D 벡터를 생성 중입니다..."):
+    # 무게를 아는지 모르는지 선택하는 옵션
+    weight_mode = st.radio(
+        "물체의 무게를 알고 계시나요?", 
+        ["직접 입력할래요", "잘 모르겠어요 (AI가 사진을 보고 추정)"]
+    )
+    
+    object_name = "분석된 물체"
+    actual_mass = 1.0 # 기본값
+    
+    if weight_mode == "직접 입력할래요":
+        object_name = st.text_input("물체의 이름", value="내 물건")
+        actual_mass = st.number_input("물체의 실제 질량 (kg)", min_value=0.01, max_value=10000.0, value=1.0, step=0.5)
+    else:
+        st.info("💡 '모름'을 선택하셨습니다. 분석 버튼을 누르면 AI가 사진 속 물체를 판독해 자동으로 무게를 추정합니다!")
+        object_name = st.text_input("물체의 대략적인 이름 (선택사항)", value="사진 속 물체")
+
+    # 물리 분석 버튼
+    if st.button("🚀 힘 분석 및 벡터 시각화 실행"):
+        
+        # '모름'을 선택했고 AI를 써야 하는 경우
+        if weight_mode == "잘 모르겠어요 (AI가 사진을 보고 추정)":
+            if not api_key:
+                st.error("⚠️ AI 자동 추정을 사용하려면 좌측 사이드바에 Gemini API 키를 입력해주세요!")
+                st.stop()
+            
+            with st.spinner("🤖 Gemini AI가 사진을 분석하여 물체와 질량을 추정하는 중..."):
                 try:
                     genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-3.6-flash')
+                    # 최신 멀티모달 모델 설정
+                    model = genai.GenerativeModel('gemini-1.5-flash')
                     
-                    prompt = f"""
-                    당신은 전문 물리학자이자 안전 진단 전문가입니다. 업로드된 사진과 사용자가 제공한 초기조건을 바탕으로 이 물체에 작용하는 힘을 분석해주세요.
-                    
-                    [사용자가 설정한 초기조건]
-                    - 입력된 무게/질량: {input_mass}
-                    - 현재 운동 상태: {input_state}
-                    (만약 '모름'이나 추정 조건이라면, 사진 속 시각적 맥락을 바탕으로 가장 합리적인 수치와 상태를 가정해서 계산해주세요.)
-                    
-                    반드시 아래 형식의 텍스트와 함께, 추정된 질량(kg)과 각 힘(중력, 수직항력, 마찰/외력 등)의 뉴턴(N) 수치를 정수 형태로 명확히 적어주세요.
-                    - 추정 질량: [숫자] kg
-                    - 중력(Gravity): [숫자] N
-                    - 수직항력(Normal Force): [숫자] N
-                    - 마찰/외력(Friction/Force): [숫자] N
-                    
-                    그리고 물리적 상태, 안전 등급(안전/주의/위험), 그리고 실생활 안전 개선 가이드를 Markdown으로 전문적으로 작성해주세요.
+                    prompt = """
+                    이 사진 속 물체를 분석해줘. 다음 두 가지 정보를 반드시 JSON 형식으로만 답해줘. 다른 말은 쓰지 마.
+                    1. "name": 물체의 정확한 이름 (예: 치이카와 인형, 화강암 바위 등)
+                    2. "mass": 이 물체의 실제 대략적인 질량(kg 단위 숫자만, 예: 0.3, 50, 1500 등)
+                    형식 예시: {"name": "치이카와 인형", "mass": 0.2}
                     """
-                    
                     response = model.generate_content([prompt, image])
-                    analysis_text = response.text
                     
-                    st.success("✨ 2D 벡터 분석 및 안전 진단이 완료되었습니다!")
+                    # 텍스트 결과에서 JSON 파싱 시도
+                    clean_text = response.text.replace("```json", "").replace("```", "").strip()
+                    ai_data = json.loads(clean_text)
                     
-                    # 가상의 물리 데이터 (추정치)
-                    mass = 1500  
-                    gravity_force = mass * 9.8
-                    normal_force = gravity_force
-                    friction_force = gravity_force * 0.3 
+                    object_name = ai_data.get("name", "알 수 없는 물체")
+                    actual_mass = float(ai_data.get("mass", 1.0))
                     
-                    # --- 🖼️ 이미지 위에 직접 2D 화살표 및 텍스트 오버레이 그리기 ---
-                    draw_image = image.copy()
-                    draw = ImageDraw.Draw(draw_image)
-                    
-                    width, height = draw_image.size
-                    
-                    # 시각적 강조를 위한 텍스트 박스 형태의 오버레이 시뮬레이션 (PIL 드로잉)
-                    # 사진 하단이나 중앙에 힘 수치 요약 배지 그려넣기
-                    margin = 20
-                    
-                    # 2D 화면에 마크다운 스타일 결과와 함께 HTML 배지/오버레이 효과 연출
-                    st.markdown("### 🖼️ 사진 기반 2D 벡터 힘 시각화 오버레이")
-                    
-                    # Streamlit 내에서 사진 위에 직관적인 HTML/CSS 오버레이 박스 띄우기 (가장 깔끔함)
-                    st.markdown(f"""
-                    <div style="position: relative; display: inline-block; width: 100%;">
-                        <!-- 원본 이미지는 streamlit 자체 st.image로 띄우고, 그 위에 힘 벡터를 배지 형태로 얹음 -->
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # 사진 출력
-                    st.image(draw_image, caption="물체에 작용하는 2D 벡터 힘 분석 결과", use_container_width=True)
-                    
-                    # 직관적인 힘 수치 카드형 UI 제공 (대회 심사위원들이 보기 가장 좋음)
-                    st.markdown("### ⚡ 실시간 힘 벡터 측정 결과")
-                    col_a, col_b, col_c = st.columns(3)
-                    col_a.metric(label="⬇ 중력 (Gravity)", value=f"{gravity_force:,.0f} N", delta="아래 방향")
-                    col_b.metric(label="⬆ 수직항력 (Normal Force)", value=f"{normal_force:,.0f} N", delta="위 방향")
-                    col_c.metric(label="➡ 마찰/외력 (Friction)", value=f"{friction_force:,.0f} N", delta="수평 방향")
-                    
-                    st.markdown("---")
-                    
-                    # AI 리포트 출력
-                    st.markdown("### 📊 AI 종합 안전 진단 리포트")
-                    st.write(analysis_text)
-                    
+                    st.success(f"✨ AI 분석 성공! 인식된 물체: **{object_name}** / 추정 질량: **{actual_mass} kg**")
                 except Exception as e:
-                    st.error(f"❌ 분석 중 오류가 발생했습니다: {e}")
+                    st.error(f"AI 분석 중 오류가 발생했습니다: {e}")
+                    st.stop()
+        
+        # 공통 물리 계산 및 벡터 시각화 로직
+        with st.spinner("물리 법칙 적용 및 벡터 시뮬레이션 중..."):
+            g = 9.8  # 중력가속도
+            gravity_force = actual_mass * g
+            
+            # 이미지 위에 벡터(화살표) 그리기
+            img_draw = image.copy()
+            draw = ImageDraw.Draw(img_draw)
+            width, height = img_draw.size
+            cx, cy = width // 2, height // 2
+            
+            arrow_length = min(width, height) // 4
+            
+            # 중력 벡터 (빨간색 - 아래)
+            draw.line([(cx, cy), (cx, cy + arrow_length)], fill="red", width=max(4, width // 100))
+            draw.polygon([(cx, cy + arrow_length), (cx - 10, cy + arrow_length - 20), (cx + 10, cy + arrow_length - 20)], fill="red")
+            
+            # 수직항력 벡터 (파란색 - 위)
+            draw.line([(cx, cy), (cx, cy - arrow_length)], fill="blue", width=max(4, width // 100))
+            draw.polygon([(cx, cy - arrow_length), (cx - 10, cy - arrow_length + 20), (cx + 10, cy - arrow_length + 20)], fill="blue")
+            
+            # 결과 출력
+            st.image(img_draw, caption=f"'{object_name}' 힘 벡터 분석 (빨강: 중력 {gravity_force:.1f}N / 파랑: 수직항력)", use_column_width=True)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(label="최종 적용 질량", value=f"{actual_mass} kg")
+            with col2:
+                st.metric(label="작용 중력 ($F=mg$)", value=f"{gravity_force:,.1f} N")
+                
+            st.markdown("### 📊 물리 리포트 요약")
+            st.write(f"- **대상 물체:** {object_name}")
+            st.write(f"- **힘의 평형:** 중력({gravity_force:.1f}N)과 바닥이 밀어내는 수직항력이 평형을 이루고 있습니다.")
+            st.info("💡 **결론:** 사용자가 무게를 몰라 '모름'을 선택하더라도, 멀티모달 AI가 캐릭터나 돌덩이의 정체를 파악해 알맞은 무게와 물리 벡터를 시각화해 줍니다!")
