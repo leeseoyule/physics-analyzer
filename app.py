@@ -4,7 +4,7 @@ import google.generativeai as genai
 import json
 
 # 앱 타이틀 및 소개
-st.title("🪨 세상의 모든 물체: 물리 & 힘 분석기")
+st.title("세상의 모든 물체: 물리 & 힘 분석기")
 st.write("사진을 올리고 무게를 직접 입력하거나, 모를 경우 **AI 멀티모달 분석**에 맡겨보세요!")
 
 # Streamlit Secrets에서 안전하게 API 키 불러오기
@@ -15,13 +15,13 @@ except Exception:
     st.stop()
 
 # 사진 업로드 기능
-uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요! (예: 흔들바위, 치이카와 인형 등)", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요! (사진 속 물체가 여러 개일 경우 제대로 분석이 진행되지 않을 수 있습니다. 하나의 물체가 포함된 사진을 업로드하세요.)", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
     
     st.markdown("---")
-    st.subheader("⚙️ 물리 변수 설정")
+    st.subheader("물리 변수 설정")
     
     # 무게를 아는지 모르는지 선택하는 옵션
     weight_mode = st.radio(
@@ -47,7 +47,7 @@ if uploaded_file is not None:
             with st.spinner("🤖 Gemini AI가 사진을 분석하여 물체와 질량을 추정하는 중..."):
                 try:
                     genai.configure(api_key=API_KEY)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    model = genai.GenerativeModel('gemini-3.6-flash')
                     
                     prompt = """
                     이 사진 속 물체를 분석해줘. 다음 두 가지 정보를 반드시 JSON 형식으로만 답해줘. 다른 말은 쓰지 마.
