@@ -4,14 +4,15 @@ import google.generativeai as genai
 import json
 
 # 앱 타이틀 및 소개
-st.title("🪨 세상의 모든 물체: 물리 & 힘 분석기 (AI 스마트 버전)")
+st.title("🪨 세상의 모든 물체: 물리 & 힘 분석기")
 st.write("사진을 올리고 무게를 직접 입력하거나, 모를 경우 **AI 멀티모달 분석**에 맡겨보세요!")
 
-# 사이드바 또는 상단에 API 키 입력 설정 (Gemini 연동용)
-with st.sidebar:
-    st.subheader("🔑 AI 설정")
-    api_key = st.text_input("Google Gemini API 키 입력", type="password")
-    st.caption("AI 자동 추정 기능을 쓰려면 Google AI Studio에서 발급받은 API 키를 입력하세요.")
+# Streamlit Secrets에서 안전하게 API 키 불러오기
+try:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    st.error("⚠️ Streamlit Secrets에 `GEMINI_API_KEY`가 설정되어 있지 않습니다. 앱 설정을 확인해주세요!")
+    st.stop()
 
 # 사진 업로드 기능
 uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요! (예: 흔들바위, 치이카와 인형 등)", type=["jpg", "jpeg", "png"])
@@ -43,14 +44,9 @@ if uploaded_file is not None:
         
         # '모름'을 선택했고 AI를 써야 하는 경우
         if weight_mode == "잘 모르겠어요 (AI가 사진을 보고 추정)":
-            if not api_key:
-                st.error("⚠️ AI 자동 추정을 사용하려면 좌측 사이드바에 Gemini API 키를 입력해주세요!")
-                st.stop()
-            
             with st.spinner("🤖 Gemini AI가 사진을 분석하여 물체와 질량을 추정하는 중..."):
                 try:
-                    genai.configure(api_key=api_key)
-                    # 최신 멀티모달 모델 설정
+                    genai.configure(api_key=API_KEY)
                     model = genai.GenerativeModel('gemini-1.5-flash')
                     
                     prompt = """
@@ -61,7 +57,6 @@ if uploaded_file is not None:
                     """
                     response = model.generate_content([prompt, image])
                     
-                    # 텍스트 결과에서 JSON 파싱 시도
                     clean_text = response.text.replace("```json", "").replace("```", "").strip()
                     ai_data = json.loads(clean_text)
                     
@@ -78,7 +73,6 @@ if uploaded_file is not None:
             g = 9.8  # 중력가속도
             gravity_force = actual_mass * g
             
-            # 이미지 위에 벡터(화살표) 그리기
             img_draw = image.copy()
             draw = ImageDraw.Draw(img_draw)
             width, height = img_draw.size
@@ -94,7 +88,6 @@ if uploaded_file is not None:
             draw.line([(cx, cy), (cx, cy - arrow_length)], fill="blue", width=max(4, width // 100))
             draw.polygon([(cx, cy - arrow_length), (cx - 10, cy - arrow_length + 20), (cx + 10, cy - arrow_length + 20)], fill="blue")
             
-            # 결과 출력 (최신 Streamlit 호환을 위해 use_container_width 사용)
             st.image(img_draw, caption=f"'{object_name}' 힘 벡터 분석 (빨강: 중력 {gravity_force:.1f}N / 파랑: 수직항력)", use_container_width=True)
             
             col1, col2 = st.columns(2)
@@ -106,4 +99,4 @@ if uploaded_file is not None:
             st.markdown("### 📊 물리 리포트 요약")
             st.write(f"- **대상 물체:** {object_name}")
             st.write(f"- **힘의 평형:** 중력({gravity_force:.1f}N)과 바닥이 밀어내는 수직항력이 평형을 이루고 있습니다.")
-            st.info("💡 **결론:** 사용자가 무게를 몰라 '모름'을 선택하더라도, 멀티모달 AI가 캐릭터나 돌덩이의 정체를 파악해 알맞은 무게와 물리 벡터를 시각화해 줍니다!")
+            st.info("💡 **결론:** 사용자는 편하게 사진만 올리고, 개발자(본인)의 API 키가 보안상 안전하게 작동하여 완벽한 물리 시각화를 제공합니다!")
