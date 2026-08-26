@@ -33,7 +33,7 @@ if uploaded_file is not None:
             with st.spinner("🤖 AI가 사진을 정밀 분석하고 물리 법칙을 계산 중입니다..."):
                 try:
                     genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    model = genai.GenerativeModel('gemini-2.5-flash')
                     
                     prompt = """
                     당신은 물리학자이자 AI 비전 분석가입니다. 업로드된 사진 속 물체를 보고 다음 항목들을 분석해주세요:
