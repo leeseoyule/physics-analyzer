@@ -120,7 +120,7 @@ if uploaded_file is not None:
             arrow_len = int(min(w, h) * 0.6)
             
             try:
-                font = ImageFont.truetype("DejaVuSans-Bold.ttf", 24) # 폰트 크기 확대
+                font = ImageFont.truetype("DejaVuSans-Bold.ttf", 48) # 폰트 크기 확대
             except:
                 font = ImageFont.load_default()
             
