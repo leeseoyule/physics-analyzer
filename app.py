@@ -9,72 +9,54 @@ st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_ic
 
 # ==========================================
 # 🎨 UI/UX 커스텀 스타일 (연한 노란색 테마 + 고양이 커서)
+# ⚠️ 중요: HTML/CSS 코드는 파이썬 들여쓰기 없이 맨 앞에 바짝 붙여야 합니다!
 # ==========================================
 st.markdown("""
-    <style>
-    /* 전체 배경을 따뜻한 연한 노란색으로 설정하고 깃허브 Raw 이미지 주소 적용 */
-    .stApp {
-        background-color: #FFFDF0;
-        color: #2C2C2C;
-        cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, auto;
-    }
-    
-    /* 버튼 위에서도 고양이 커서가 유지되도록 설정 */
-    div.stButton > button {
-        background: linear-gradient(135deg, #FFD166 0%, #FFB703 100%);
-        color: #2C2C2C;
-        font-weight: bold;
-        border: none;
-        border-radius: 12px;
-        padding: 0.6rem 1.2rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        cursor: url('여기에_복사한_Raw_이미지_주소_붙여넣기') 16 16, pointer;
-    }
-    </style>
-""", unsafe_allow_html=True)
-    
-    /* 버튼 스타일링 */
-    div.stButton > button {
-        background: linear-gradient(135deg, #FFD166 0%, #FFB703 100%);
-        color: #2C2C2C;
-        font-weight: bold;
-        border: none;
-        border-radius: 12px;
-        padding: 0.6rem 1.2rem;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        cursor: url('https://em-content.zobj.net/source/microsoft-teams/363/cat-face_1f431.png') 16 16, pointer;
-    }
-    div.stButton > button:hover {
-        background: linear-gradient(135deg, #FFB703 100%, #FB8500 100%);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 6px 8px rgba(0,0,0,0.1);
-    }
+<style>
+.stApp {
+    background-color: #FFFDF0;
+    color: #2C2C2C;
+    cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, auto;
+}
 
-    /* 슬라이더 및 입력창 커서 변경 */
-    input, textarea, select, div[data-baseweb="slider"] {
-        cursor: url('https://em-content.zobj.net/source/microsoft-teams/363/cat-face_1f431.png') 16 16, auto;
-    }
+div.stButton > button {
+    background: linear-gradient(135deg, #FFD166 0%, #FFB703 100%);
+    color: #2C2C2C;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, pointer;
+}
 
-    /* 메트릭 박스 스타일 */
-    div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
-        padding: 15px;
-        border-radius: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-        border: 1px solid #FDF0D5;
-    }
-    
-    /* 제목 스타일 */
-    h1, h2, h3 {
-        color: #333333;
-    }
-    </style>
+div.stButton > button:hover {
+    background: linear-gradient(135deg, #FFB703 100%, #FB8500 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0,0,0,0.1);
+}
+
+input, textarea, select, div[data-baseweb="slider"] {
+    cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, auto;
+}
+
+div[data-testid="stMetric"] {
+    background-color: #FFFFFF;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    border: 1px solid #FDF0D5;
+}
+
+h1, h2, h3 {
+    color: #333333;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# 상단 안내 문구 (고양이 상호작용 버튼 제거)
+# 상단 안내 문구
 st.title("벡터 물리 & 힘 시뮬레이터")
 st.write("어떤 물체 사진이든 업로드하고, 무게를 설정한 뒤 **외력의 크기(최대 2000N)**와 각도에 따른 종합적인 힘의 상쇄 및 벡터 분해 시뮬레이션을 확인해보세요!")
 
@@ -148,7 +130,6 @@ if uploaded_file is not None:
 
     col_f1, col_f2 = st.columns(2)
     with col_f1:
-        # 외력 최대 크기를 2000N으로 제한
         force_magnitude = st.slider(
             "가하고 싶은 외력의 크기 (N)", 
             min_value=0.0, max_value=2000.0, value=200.0, step=10.0,
@@ -178,46 +159,42 @@ if uploaded_file is not None:
 
             stability_ratio = (force_magnitude / max(1.0, gravity_force * 0.5)) * 100
 
-            # 이미지 드로잉 준비 (화살표를 물체 크기만큼 대폭 키움)
+            # 이미지 드로잉 준비
             img_eq = image.copy()
             draw_eq = ImageDraw.Draw(img_eq)
             w, h = image.size
             cx, cy = w // 2, h // 2
 
-            # 화살표 길이를 물체 크기 수준(이미지 치수의 60%)으로 설정
             arrow_len = int(min(w, h) * 0.6)
 
             try:
-                font = ImageFont.truetype("DejaVuSans-Bold.ttf", 48) # 폰트 크기 확대
+                font = ImageFont.truetype("DejaVuSans-Bold.ttf", 48)
             except:
                 font = ImageFont.load_default()
 
-            # 1. 평형 상태 이미지 (중력 & 수직항력)
-            draw_eq.line([(cx, cy), (cx, cy + arrow_len)], fill="red", width=15) # 뚱뚱한 두께(20)
+            # 1. 평형 상태 이미지
+            draw_eq.line([(cx, cy), (cx, cy + arrow_len)], fill="red", width=15)
             draw_eq.text((cx + 20, cy + arrow_len // 2), f"중력\n({gravity_force:,.0f}N)", fill="red", font=font)
 
             draw_eq.line([(cx, cy), (cx, cy - arrow_len)], fill="blue", width=20)
             draw_eq.text((cx + 20, cy - arrow_len // 2 - 30), f"수직항력\n({gravity_force:,.0f}N)", fill="blue", font=font)
 
-            # 2. 시뮬레이션 이미지 (기존 힘 + 외력 + 상쇄되는 힘 동시 표시)
+            # 2. 시뮬레이션 이미지
             img_sim = image.copy()
             draw_sim = ImageDraw.Draw(img_sim)
 
             if force_magnitude > 0:
-                # A. 외력 벡터 (초록색, 뚱뚱하고 길게)
                 dx = int(arrow_len * math.cos(angle_rad))
                 dy = int(arrow_len * math.sin(angle_rad))
                 start_x, start_y = cx - dx, cy + dy
 
-                draw_sim.line([(start_x, start_y), (cx, cy)], fill="green", width=10) # 외력 화살표 (두께 20)
+                draw_sim.line([(start_x, start_y), (cx, cy)], fill="green", width=10)
                 draw_sim.text((start_x - 10, start_y - 45), f"외력 F: {force_magnitude:,.0f}N ({force_angle}°)", fill="green", font=font)
 
-                # B. 수평 방향 상쇄력 / 마찰력 (보라색)
                 counter_x = cx + int(arrow_len * 0.8 * (-1 if horizontal_force >= 0 else 1))
                 draw_sim.line([(cx, cy + 20), (counter_x, cy + 20)], fill="purple", width=20)
                 draw_sim.text((counter_x if counter_x < cx else cx, cy + 30), f"상쇄/마찰력\n({counter_horizontal_force:+,.0f}N)", fill="purple", font=font)
 
-                # C. 수직 분해 및 변동된 수직항력 (주황색)
                 v_end_y = cy - int(arrow_len * 0.8 * (effective_normal_force / max(1.0, gravity_force)))
                 draw_sim.line([(cx + 40, cy), (cx + 40, v_end_y)], fill="orange", width=8)
                 draw_sim.text((cx + 60, (cy + v_end_y)//2), f"변동 수직항력\n({effective_normal_force:,.0f}N)", fill="orange", font=font)
