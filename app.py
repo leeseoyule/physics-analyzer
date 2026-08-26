@@ -5,7 +5,7 @@ import json
 import math
 
 # 페이지 설정
-st.set_page_config(page_title="물리 시뮬레이터", page_icon="🪨", layout="wide")
+st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
 
 # ==========================================
 # 🎨 UI/UX: PC는 이미지 커서, 모바일은 터치 고양이 이모지 적용
@@ -98,7 +98,7 @@ if (isMobile) {
 """, unsafe_allow_html=True)
 
 # 상단 안내 문구
-st.title("벡터 물리 & 힘 시뮬레이터 🐱")
+st.title("스마트 벡터 물리 & 힘 시뮬레이터 🐱")
 st.write("어떤 물체 사진이든 업로드하고, 무게를 설정한 뒤 **외력의 크기(최대 2000N)**와 각도에 따른 종합적인 힘의 상쇄 및 벡터 분해 시뮬레이션을 확인해보세요!")
 
 try:
@@ -152,4 +152,4 @@ if uploaded_file is not None:
                         prompt = '이 사진 속의 주요 물체를 분석해줘. 다음 정보를 반드시 JSON 형식으로만 답해줘. 다른 말은 쓰지 마. 1. "name": 물체의 이름 2. "mass": 이 물체의 실제 대략적인 질량 (kg 단위 숫자만). 형식 예시: {"name": "흔들바위", "mass": 5000}'
 
                         res = model.generate_content([prompt, image])
-                        clean_text = res.text.replace("```json", "").strip()
+                        clean_text = res.text.replace("```json", "").replace("
