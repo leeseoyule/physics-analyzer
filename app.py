@@ -8,16 +8,13 @@ import math
 st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
 
 # ==========================================
-# 🎨 UI/UX 커스텀 스타일 (연한 노란색 테마 + 고양이 커서)
-# ⚠️ 중요: HTML/CSS 코드는 파이썬 들여쓰기 없이 맨 앞에 바짝 붙여야 합니다!
+# 🎨 UI/UX 및 모바일/PC 겸용 고양이 이미지 트래커 적용
 # ==========================================
 st.markdown("""
 <style>
 .stApp {
     background-color: #FFFDF0;
     color: #2C2C2C;
-    /* 고양이 커서 지정 + 뒤에 32 32 같은 픽셀 크기를 지정하여 브라우저에 크기 전달 */
-    cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, auto;
 }
 
 div.stButton > button {
@@ -29,7 +26,6 @@ div.stButton > button {
     padding: 0.6rem 1.2rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     transition: all 0.3s ease;
-    cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, pointer;
 }
 
 div.stButton > button:hover {
@@ -37,10 +33,6 @@ div.stButton > button:hover {
     color: white;
     transform: translateY(-2px);
     box-shadow: 0 6px 8px rgba(0,0,0,0.1);
-}
-
-input, textarea, select, div[data-baseweb="slider"] {
-    cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, auto;
 }
 
 div[data-testid="stMetric"] {
@@ -54,11 +46,57 @@ div[data-testid="stMetric"] {
 h1, h2, h3 {
     color: #333333;
 }
+
+/* PC와 모바일에서 마우스/손가락을 따라다니는 고양이 이미지 설정 */
+#following-cat {
+    position: fixed;
+    pointer-events: none;
+    background-image: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png');
+    background-size: cover;
+    width: 35px;  /* 고양이 이미지 가로 크기 */
+    height: 35px; /* 고양이 이미지 세로 크기 */
+    z-index: 99999;
+    transform: translate(-50%, -50%);
+    display: none; /* 평소엔 숨겨져 있다가 마우스/터치 시 등장 */
+    transition: transform 0.05s ease-out;
+}
 </style>
+
+<!-- 고양이 이미지 추적 요소 -->
+<div id="following-cat"></div>
+
+<script>
+const cat = document.getElementById('following-cat');
+
+// 마우스 움직임 감지 (PC)
+document.addEventListener('mousemove', (e) => {
+    cat.style.display = 'block';
+    cat.style.left = e.clientX + 'px';
+    cat.style.top = e.clientY + 'px';
+});
+
+// 터치 움직임 감지 (모바일: 손가락을 대고 움직일 때)
+document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 0) {
+        cat.style.display = 'block';
+        cat.style.left = e.touches[0].clientX + 'px';
+        cat.style.top = e.touches[0].clientY + 'px';
+    }
+}, { passive: true });
+
+// 화면을 터치하는 순간
+document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 0) {
+        cat.style.display = 'block';
+        cat.style.left = e.touches[0].clientX + 'px';
+        cat.style.top = e.touches[0].clientY + 'px';
+    }
+}, { passive: true });
+</script>
 """, unsafe_allow_html=True)
 
 # 상단 안내 문구
-st.title("벡터 물리 & 힘 시뮬레이터")
+st.title("스마트 벡터 물리 & 힘 시뮬레이터 🐱")
 st.write("어떤 물체 사진이든 업로드하고, 무게를 설정한 뒤 **외력의 크기(최대 2000N)**와 각도에 따른 종합적인 힘의 상쇄 및 벡터 분해 시뮬레이션을 확인해보세요!")
 
 try:
@@ -72,6 +110,10 @@ uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요 (�
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
+
+    # 사진 크기 최적화
+    max_size = 800
+    image.thumbnail((max_size, max_size))
 
     st.markdown("---")
     st.subheader("물체 및 무게 설정 방식 선택")
