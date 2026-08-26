@@ -1,102 +1,66 @@
 import streamlit as st
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import google.generativeai as genai
 import json
+import math
 
-# 앱 타이틀 및 소개
-st.title("세상의 모든 물체: 물리 & 힘 분석기")
-st.write("사진을 올리고 무게를 직접 입력하거나, 모를 경우 **AI 멀티모달 분석**에 맡겨보세요!")
+# 페이지 설정
+st.set_page_config(page_title="범용 스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
 
-# Streamlit Secrets에서 안전하게 API 키 불러오기
+st.title("🌍 범용 스마트 벡터 물리 & 힘 시뮬레이터")
+st.write("어떤 물체 사진이든 업로드하고, 무게 입력 방식을 선택한 뒤 **외력의 크기와 각도**에 따른 물리 분해 및 시뮬레이션을 실행해보세요!")
+
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except Exception:
-    st.error("⚠️ Streamlit Secrets에 `GEMINI_API_KEY`가 설정되어 있지 않습니다. 앱 설정을 확인해주세요!")
+    st.error("⚠️ Streamlit Secrets에 `GEMINI_API_KEY`가 설정되어 있지 않습니다.")
     st.stop()
 
-# 사진 업로드 기능
-uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요! (사진 속 물체가 여러 개일 경우 제대로 분석이 진행되지 않을 수 있습니다. 하나의 물체가 포함된 사진을 업로드하세요.)", type=["jpg", "jpeg", "png"])
+# 1. 사진 업로드
+uploaded_file = st.file_uploader("분석할 물체 사진을 올려주세요 (예: 흔들바위, 피규어, 의자 등)", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
     
     st.markdown("---")
-    st.subheader("물리 변수 설정")
+    st.subheader("⚙️ 1단계: 물체 및 무게 설정 방식 선택")
     
-    # 무게를 아는지 모르는지 선택하는 옵션
+    # [요청하신 부분] 사진 입력 칸 바로 밑에 무게 입력 방식 선택 칸 배치
     weight_mode = st.radio(
-        "물체의 무게를 알고 계시나요?", 
-        ["직접 입력할래요", "잘 모르겠어요 (AI가 사진을 보고 추정)"]
+        "물체의 이름과 무게를 어떻게 설정하시겠습니까?", 
+        ["직접 입력할래요", "잘 모르겠어요 (AI에게 물체 인식 및 무게 추정 맡기기)"],
+        horizontal=True
     )
     
-    object_name = "분석된 물체"
-    actual_mass = 1.0 # 기본값
+    object_name = "물체"
+    actual_mass = 100.0
     
-    if weight_mode == "직접 입력할래요":
-        object_name = st.text_input("물체의 이름", value="내 물건")
-        actual_mass = st.number_input("물체의 실제 질량 (kg)", min_value=0.01, max_value=10000.0, value=1.0, step=0.5)
-    else:
-        st.info("💡 '모름'을 선택하셨습니다. 분석 버튼을 누르면 AI가 사진 속 물체를 판독해 자동으로 무게를 추정합니다!")
-        object_name = st.text_input("물체의 대략적인 이름 (선택사항)", value="사진 속 물체")
+    # 세션 상태 관리 (사진이 바뀌거나 모드 변경 시 초기화)
+    if "last_file" not in st.session_state or st.session_state["last_file"] != uploaded_file.name:
+        st.session_state["last_file"] = uploaded_file.name
+        st.session_state["ai_analyzed"] = False
 
-    # 물리 분석 버튼
-    if st.button("🚀 힘 분석 및 벡터 시각화 실행"):
+    if weight_mode == "직접 입력할래요":
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            object_name = st.text_input("물체의 이름", value="흔들바위")
+        with col_m2:
+            actual_mass = st.number_input("물체의 질량 (kg)", min_value=0.01, max_value=1000000.0, value=5000.0, step=10.0)
+    else:
+        st.info("💡 'AI에게 추정 맡기기'를 선택하셨습니다. 아래 분석 버튼을 누르면 AI가 사진을 판독합니다.")
         
-        # '모름'을 선택했고 AI를 써야 하는 경우
-        if weight_mode == "잘 모르겠어요 (AI가 사진을 보고 추정)":
-            with st.spinner("🤖 Gemini AI가 사진을 분석하여 물체와 질량을 추정하는 중..."):
-                try:
-                    genai.configure(api_key=API_KEY)
-                    model = genai.GenerativeModel('gemini-3.6-flash')
-                    
-                    prompt = """
-                    이 사진 속 물체를 분석해줘. 다음 두 가지 정보를 반드시 JSON 형식으로만 답해줘. 다른 말은 쓰지 마.
-                    1. "name": 물체의 정확한 이름 (예: 치이카와 인형, 화강암 바위 등)
-                    2. "mass": 이 물체의 실제 대략적인 질량(kg 단위 숫자만, 예: 0.3, 50, 1500 등)
-                    형식 예시: {"name": "치이카와 인형", "mass": 0.2}
-                    """
-                    response = model.generate_content([prompt, image])
-                    
-                    clean_text = response.text.replace("```json", "").replace("```", "").strip()
-                    ai_data = json.loads(clean_text)
-                    
-                    object_name = ai_data.get("name", "알 수 없는 물체")
-                    actual_mass = float(ai_data.get("mass", 1.0))
-                    
-                    st.success(f"✨ AI 분석 성공! 인식된 물체: **{object_name}** / 추정 질량: **{actual_mass} kg**")
-                except Exception as e:
-                    st.error(f"AI 분석 중 오류가 발생했습니다: {e}")
-                    st.stop()
-        
-        # 공통 물리 계산 및 벡터 시각화 로직
-        with st.spinner("물리 법칙 적용 및 벡터 시뮬레이션 중..."):
-            g = 9.8  # 중력가속도
-            gravity_force = actual_mass * g
-            
-            img_draw = image.copy()
-            draw = ImageDraw.Draw(img_draw)
-            width, height = img_draw.size
-            cx, cy = width // 2, height // 2
-            
-            arrow_length = min(width, height) // 4
-            
-            # 중력 벡터 (빨간색 - 아래)
-            draw.line([(cx, cy), (cx, cy + arrow_length)], fill="red", width=max(4, width // 100))
-            draw.polygon([(cx, cy + arrow_length), (cx - 10, cy + arrow_length - 20), (cx + 10, cy + arrow_length - 20)], fill="red")
-            
-            # 수직항력 벡터 (파란색 - 위)
-            draw.line([(cx, cy), (cx, cy - arrow_length)], fill="blue", width=max(4, width // 100))
-            draw.polygon([(cx, cy - arrow_length), (cx - 10, cy - arrow_length + 20), (cx + 10, cy - arrow_length + 20)], fill="blue")
-            
-            st.image(img_draw, caption=f"'{object_name}' 힘 벡터 분석 (빨강: 중력 {gravity_force:.1f}N / 파랑: 수직항력)", use_container_width=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric(label="최종 적용 질량", value=f"{actual_mass} kg")
-            with col2:
-                st.metric(label="작용 중력 ($F=mg$)", value=f"{gravity_force:,.1f} N")
-                
-            st.markdown("### 📊 물리 리포트 요약")
-            st.write(f"- **대상 물체:** {object_name}")
-            st.write(f"- **힘의 평형:** 중력({gravity_force:.1f}N)과 바닥이 밀어내는 수직항력이 평형을 이루고 있습니다.")
-            st.info("💡 **결론:** 사용자는 편하게 사진만 올리고, 개발자(본인)의 API 키가 보안상 안전하게 작동하여 완벽한 물리 시각화를 제공합니다!")
+        if not st.session_state.get("ai_analyzed", False):
+            if st.button("🤖 AI로 물체 인식 및 무게 자동 추정 실행"):
+                with st.spinner("AI가 사진 속 물체를 분석하고 이름과 질량을 추정하는 중..."):
+                    try:
+                        genai.configure(api_key=API_KEY)
+                        model = genai.GenerativeModel('gemini-1.5-flash')
+                        
+                        prompt = """
+                        이 사진 속의 주요 물체를 분석해줘. 다음 정보를 반드시 JSON 형식으로만 답해줘. 다른 말은 쓰지 마.
+                        1. "name": 물체의 이름 (예: 흔들바위, 피규어, 자동차, 의자 등)
+                        2. "mass": 이 물체의 실제 대략적인 질량 (kg 단위 숫자만, 예: 작은 소품이면 0.5, 거대한 바위나 건물류면 5000 등)
+                        형식 예시: {"name": "흔들바위", "mass": 5000}
+                        """
+                        res = model.generate_content([prompt, image])
+                        clean_text = res.text.replace("```json", "").replace("
