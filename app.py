@@ -152,4 +152,124 @@ if uploaded_file is not None:
                         prompt = '이 사진 속의 주요 물체를 분석해줘. 다음 정보를 반드시 JSON 형식으로만 답해줘. 다른 말은 쓰지 마. 1. "name": 물체의 이름 2. "mass": 이 물체의 실제 대략적인 질량 (kg 단위 숫자만). 형식 예시: {"name": "흔들바위", "mass": 5000}'
 
                         res = model.generate_content([prompt, image])
-                        clean_text = res.text.replace("```json", "").replace("
+                        clean_text = res.text.replace("```json", "").replace("```", "").strip()
+                        data = json.loads(clean_text)
+
+                        st.session_state["ai_name"] = data.get("name", "인식된 물체")
+                        st.session_state["ai_mass"] = float(data.get("mass", 100.0))
+                        st.session_state["ai_analyzed"] = True
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"AI 분석 중 오류가 발생했습니다: {e}")
+
+        if st.session_state.get("ai_analyzed", False):
+            object_name = st.session_state.get("ai_name", "물체")
+            actual_mass = st.session_state.get("ai_mass", 100.0)
+            st.success(f"AI 분석 완료! 인식된 물체: **{object_name}** / 추정 질량: **{actual_mass:,.1f} kg**")
+        else:
+            object_name = "AI 분석 대기 중인 물체"
+            actual_mass = 1000.0
+
+    st.markdown("---")
+    st.subheader("외부 힘(Vector Force) 사용자 정의 설정")
+
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+        force_magnitude = st.slider(
+            "가하고 싶은 외력의 크기 (N)", 
+            min_value=0.0, max_value=2000.0, value=200.0, step=10.0,
+            help="최대 2000N까지 설정 가능합니다. (100N = 약 10kg을 미는 힘)"
+        )
+    with col_f2:
+        force_angle = st.slider(
+            "미는 방향 각도 (수평 기준, °)", 
+            min_value=-90.0, max_value=90.0, value=0.0, step=5.0,
+            help="0°: 수평 밀기 / 양수(+): 위에서 아래로 내리누름 / 음수(-): 아래에서 위로 치켜올림"
+        )
+
+    # 물리 시뮬레이션 실행 버튼
+    if st.button("벡터 분해 및 물리 시뮬레이션 실행"):
+        with st.spinner("삼각함수 벡터 분해 및 상쇄 시뮬레이션 생성 중..."):
+            g = 9.8
+            gravity_force = actual_mass * g # 중력 (N)
+
+            # 삼각함수를 통한 수평힘 / 수직힘 벡터 분해
+            angle_rad = math.radians(force_angle)
+            horizontal_force = force_magnitude * math.cos(angle_rad) # 수평 성분 (Fx)
+            vertical_force = force_magnitude * math.sin(angle_rad)    # 수직 성분 (Fy)
+
+            # 상쇄되는 힘 및 반작용 계산
+            effective_normal_force = gravity_force + vertical_force
+            counter_horizontal_force = -horizontal_force 
+
+            stability_ratio = (force_magnitude / max(1.0, gravity_force * 0.5)) * 100
+
+            # 이미지 드로잉 준비
+            img_eq = image.copy()
+            draw_eq = ImageDraw.Draw(img_eq)
+            w, h = image.size
+            cx, cy = w // 2, h // 2
+
+            arrow_len = int(min(w, h) * 0.6)
+
+            try:
+                font = ImageFont.truetype("DejaVuSans-Bold.ttf", 48)
+            except:
+                font = ImageFont.load_default()
+
+            # 1. 평형 상태 이미지
+            draw_eq.line([(cx, cy), (cx, cy + arrow_len)], fill="red", width=15)
+            draw_eq.text((cx + 20, cy + arrow_len // 2), f"중력\n({gravity_force:,.0f}N)", fill="red", font=font)
+
+            draw_eq.line([(cx, cy), (cx, cy - arrow_len)], fill="blue", width=20)
+            draw_eq.text((cx + 20, cy - arrow_len // 2 - 30), f"수직항력\n({gravity_force:,.0f}N)", fill="blue", font=font)
+
+            # 2. 시뮬레이션 이미지
+            img_sim = image.copy()
+            draw_sim = ImageDraw.Draw(img_sim)
+
+            if force_magnitude > 0:
+                dx = int(arrow_len * math.cos(angle_rad))
+                dy = int(arrow_len * math.sin(angle_rad))
+                start_x, start_y = cx - dx, cy + dy
+
+                draw_sim.line([(start_x, start_y), (cx, cy)], fill="green", width=10)
+                draw_sim.text((start_x - 10, start_y - 45), f"외력 F: {force_magnitude:,.0f}N ({force_angle}°)", fill="green", font=font)
+
+                counter_x = cx + int(arrow_len * 0.8 * (-1 if horizontal_force >= 0 else 1))
+                draw_sim.line([(cx, cy + 20), (counter_x, cy + 20)], fill="purple", width=20)
+                draw_sim.text((counter_x if counter_x < cx else cx, cy + 30), f"상쇄/마찰력\n({counter_horizontal_force:+,.0f}N)", fill="purple", font=font)
+
+                v_end_y = cy - int(arrow_len * 0.8 * (effective_normal_force / max(1.0, gravity_force)))
+                draw_sim.line([(cx + 40, cy), (cx + 40, v_end_y)], fill="orange", width=8)
+                draw_sim.text((cx + 60, (cy + v_end_y)//2), f"변동 수직항력\n({effective_normal_force:,.0f}N)", fill="orange", font=font)
+
+            # 레이아웃 출력
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("기본 힘의 평형 상태")
+                st.image(img_eq, caption=f"'{object_name}' 정적 평형", use_container_width=True)
+
+            with col2:
+                st.subheader("힘의 상쇄 및 벡터 분해 시뮬레이션")
+                st.image(img_sim, caption=f"외력 크기: {force_magnitude}N / 각도: {force_angle}°", use_container_width=True)
+
+            # 상세 분석 리포트
+            st.markdown("### 정밀 힘의 상쇄 및 벡터 분해 리포트")
+            c_m1, c_m2, c_m3 = st.columns(3)
+            with c_m1:
+                st.metric(label="설정된 외력 (Force)", value=f"{force_magnitude:,.1f} N ({force_angle}°)")
+            with c_m2:
+                st.metric(label="수평힘 및 상쇄력 (Fx)", value=f"{horizontal_force:,.1f} N", delta=f"상쇄: {counter_horizontal_force:+,.1f}N")
+            with c_m3:
+                st.metric(label="최종 수직항력 (Fy 반영)", value=f"{effective_normal_force:,.1f} N", delta=f"변동: {vertical_force:+,.1f}N")
+
+            # 안정성 평가 바
+            st.progress(min(max(stability_ratio, 0), 100) / 100.0, text=f"물체 질량 대비 외력 부하율: {stability_ratio:.1f}%")
+
+            if stability_ratio > 50:
+                st.error("🚨 **결과 예측:** 가해진 힘이 물체의 무게 대비 상대적으로 커서 상쇄 한계를 넘어서고 밀려나거나 쓰러질 위험이 높습니다!")
+            else:
+                st.success("✨ **결과 예측:** 마찰력 및 지지력의 상쇄 범위 내에 있어 물체가 안전하게 버티거나 평형을 유지합니다.")
