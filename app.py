@@ -1,4 +1,3 @@
-%%writefile app.py
 import streamlit as st
 from PIL import Image, ImageDraw
 import google.generativeai as genai
@@ -95,8 +94,8 @@ if uploaded_file is not None:
             draw.line([(cx, cy), (cx, cy - arrow_length)], fill="blue", width=max(4, width // 100))
             draw.polygon([(cx, cy - arrow_length), (cx - 10, cy - arrow_length + 20), (cx + 10, cy - arrow_length + 20)], fill="blue")
             
-            # 결과 출력
-            st.image(img_draw, caption=f"'{object_name}' 힘 벡터 분석 (빨강: 중력 {gravity_force:.1f}N / 파랑: 수직항력)", use_column_width=True)
+            # 결과 출력 (최신 Streamlit 호환을 위해 use_container_width 사용)
+            st.image(img_draw, caption=f"'{object_name}' 힘 벡터 분석 (빨강: 중력 {gravity_force:.1f}N / 파랑: 수직항력)", use_container_width=True)
             
             col1, col2 = st.columns(2)
             with col1:
