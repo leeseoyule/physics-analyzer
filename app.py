@@ -12,15 +12,27 @@ st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_ic
 # ==========================================
 st.markdown("""
     <style>
-    /* 전체 배경을 따뜻한 연한 노란색으로 설정 */
+    /* 전체 배경을 따뜻한 연한 노란색으로 설정하고 깃허브 Raw 이미지 주소 적용 */
     .stApp {
         background-color: #FFFDF0;
         color: #2C2C2C;
-        /* 전체 앱에 커스텀 고양이 커서 적용 */
-        /* 고양이 이미지 주소를 직접 입력하거나 base64로 변환하여 사용 가능 */
-        /* 아래는 예시 이미지 URL이며, 실제 작동하려면 접근 가능한 이미지 링크여야 합니다. */
-        cursor: url('https://em-content.zobj.net/source/microsoft-teams/363/cat-face_1f431.png') 16 16, auto;
+        cursor: url('https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png') 16 16, auto;
     }
+    
+    /* 버튼 위에서도 고양이 커서가 유지되도록 설정 */
+    div.stButton > button {
+        background: linear-gradient(135deg, #FFD166 0%, #FFB703 100%);
+        color: #2C2C2C;
+        font-weight: bold;
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        cursor: url('여기에_복사한_Raw_이미지_주소_붙여넣기') 16 16, pointer;
+    }
+    </style>
+""", unsafe_allow_html=True)
     
     /* 버튼 스타일링 */
     div.stButton > button {
