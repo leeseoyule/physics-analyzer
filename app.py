@@ -8,7 +8,7 @@ import math
 st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
 
 # ==========================================
-# 🎨 UI/UX 스타일 (PC 고양이 커서 + 모바일/PC 겸용 우측 하단 고양이 이미지 마스코트)
+# 🎨 UI/UX 스타일 (PC 고양이 커서 + 말풍선 기능이 있는 우측 하단 고양이 마스코트)
 # ==========================================
 st.markdown("""
 <style>
@@ -50,17 +50,59 @@ h1, h2, h3 {
     color: #333333;
 }
 
-/* 우측 하단 고정 마스코트 고양이 이미지 스타일 */
-.floating-cat-mascot {
+/* 우측 하단 고정 마스코트 컨테이너 */
+.floating-cat-container {
     position: fixed;
     bottom: 20px;
     right: 20px;
+    z-index: 99999;
+    cursor: pointer;
+}
+
+/* 말풍선 스타일 */
+.speech-bubble {
+    position: absolute;
+    bottom: 60px;
+    right: 0;
+    background: white;
+    border: 2px solid #FFB703;
+    padding: 8px 14px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-size: 13px;
+    font-weight: bold;
+    color: #333333;
+    white-space: nowrap;
+    display: none; /* 평소엔 숨김 */
+    animation: fadeIn 0.2s ease;
+}
+
+/* 말풍선 꼬리 */
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    right: 30px;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-right: 2px solid #FFB703;
+    border-bottom: 2px solid #FFB703;
+    transform: rotate(45deg);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 우측 하단 고양이 이미지 마스코트 스타일 */
+.floating-cat-mascot {
     background-color: white;
     padding: 8px 14px;
     border-radius: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     border: 2px solid #FFB703;
-    z-index: 99999;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -82,11 +124,34 @@ h1, h2, h3 {
 }
 </style>
 
-<!-- 우측 하단 고양이 마스코트 이미지 (Raw 링크 적용) -->
-<div class="floating-cat-mascot">
-    <img src="https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png" alt="고양이 마스코트">
-    <div>물리 도우미 대기 중!</div>
+<!-- 우측 하단 고양이 마스코트 + 말풍선 HTML -->
+<div class="floating-cat-container" id="cat-container">
+    <div class="speech-bubble" id="cat-bubble">나는 양자역학 고양이야!</div>
+    <div class="floating-cat-mascot">
+        <img src="https://raw.githubusercontent.com/leeseoyule/physics-analyzer/main/cat.png" alt="고양이 마스코트">
+        <div>물리 도우미 대기 중!</div>
+    </div>
 </div>
+
+<script>
+const container = document.getElementById('cat-container');
+const bubble = document.getElementById('cat-bubble');
+
+// 고양이를 클릭했을 때 말풍선 토글
+container.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (bubble.style.display === 'block') {
+        bubble.style.display = 'none';
+    } else {
+        bubble.style.display = 'block';
+    }
+});
+
+// 화면의 다른 곳을 누르면 말풍선 닫기
+window.addEventListener('click', () => {
+    bubble.style.display = 'none';
+});
+</script>
 """, unsafe_allow_html=True)
 
 # 상단 안내 문구
