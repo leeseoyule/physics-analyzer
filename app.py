@@ -3,13 +3,12 @@ from PIL import Image, ImageDraw, ImageFont
 import google.generativeai as genai
 import json
 import math
-import random
 
 # 페이지 설정
 st.set_page_config(page_title="스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
 
 # ==========================================
-# 🎨 UI/UX 커스텀 스타일 (연한 노란색 테마)
+# 🎨 UI/UX 커스텀 스타일 (연한 노란색 테마 + 고양이 커서)
 # ==========================================
 st.markdown("""
     <style>
@@ -17,6 +16,10 @@ st.markdown("""
     .stApp {
         background-color: #FFFDF0;
         color: #2C2C2C;
+        /* 전체 앱에 커스텀 고양이 커서 적용 */
+        /* 고양이 이미지 주소를 직접 입력하거나 base64로 변환하여 사용 가능 */
+        /* 아래는 예시 이미지 URL이며, 실제 작동하려면 접근 가능한 이미지 링크여야 합니다. */
+        cursor: url('https://em-content.zobj.net/source/microsoft-teams/363/cat-face_1f431.png') 16 16, auto;
     }
     
     /* 버튼 스타일링 */
@@ -29,12 +32,18 @@ st.markdown("""
         padding: 0.6rem 1.2rem;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         transition: all 0.3s ease;
+        cursor: url('https://em-content.zobj.net/source/microsoft-teams/363/cat-face_1f431.png') 16 16, pointer;
     }
     div.stButton > button:hover {
         background: linear-gradient(135deg, #FFB703 100%, #FB8500 100%);
         color: white;
         transform: translateY(-2px);
         box-shadow: 0 6px 8px rgba(0,0,0,0.1);
+    }
+
+    /* 슬라이더 및 입력창 커서 변경 */
+    input, textarea, select, div[data-baseweb="slider"] {
+        cursor: url('https://em-content.zobj.net/source/microsoft-teams/363/cat-face_1f431.png') 16 16, auto;
     }
 
     /* 메트릭 박스 스타일 */
@@ -45,35 +54,17 @@ st.markdown("""
         box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         border: 1px solid #FDF0D5;
     }
+    
+    /* 제목 스타일 */
+    h1, h2, h3 {
+        color: #333333;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# 🐱 양자역학 고양이 상호작용 세션
-# ==========================================
-if "cat_clicks" not in st.session_state:
-    st.session_state["cat_clicks"] = 0
-
-cat_quotes = [
-    "📦 \"슈뢰딩거의 고양이가 상자 속에서 힘의 평형을 고민 중입니다!\"",
-    "✨ \"관측하기 전까지 이 물체는 움직이고 있으면서도 멈춰 있습니다.\"",
-    "🐾 \"집사야, 외력을 줄 때 조심해줘!\"",
-    "🌀 \"파동함수가 붕괴되었습니다! 벡터 분해를 시작하죠.\""
-]
-
-# 상단 레이아웃 (제목 + 고양이 상호작용 버튼)
-col_head1, col_head2 = st.columns([4, 1])
-with col_head1:
-    st.title("스마트 벡터 물리 & 힘 시뮬레이터")
-    st.write("어떤 물체 사진이든 업로드하고, 무게를 설정한 뒤 **외력의 크기(최대 2000N)**와 각도에 따른 종합적인 힘의 상쇄 및 벡터 분해 시뮬레이션을 확인해보세요!")
-with col_head2:
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🐱 양자 고양이 쓰다듬기"):
-        st.session_state["cat_clicks"] += 1
-
-if st.session_state["cat_clicks"] > 0:
-    current_quote = random.choice(cat_quotes)
-    st.info(f"양자 고양이 상태 (상호작용 횟수: {st.session_state['cat_clicks']}회): {current_quote}")
+# 상단 안내 문구 (고양이 상호작용 버튼 제거)
+st.title("벡터 물리 & 힘 시뮬레이터")
+st.write("어떤 물체 사진이든 업로드하고, 무게를 설정한 뒤 **외력의 크기(최대 2000N)**와 각도에 따른 종합적인 힘의 상쇄 및 벡터 분해 시뮬레이션을 확인해보세요!")
 
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -190,7 +181,7 @@ if uploaded_file is not None:
                 font = ImageFont.load_default()
 
             # 1. 평형 상태 이미지 (중력 & 수직항력)
-            draw_eq.line([(cx, cy), (cx, cy + arrow_len)], fill="red", width=15)
+            draw_eq.line([(cx, cy), (cx, cy + arrow_len)], fill="red", width=15) # 뚱뚱한 두께(20)
             draw_eq.text((cx + 20, cy + arrow_len // 2), f"중력\n({gravity_force:,.0f}N)", fill="red", font=font)
 
             draw_eq.line([(cx, cy), (cx, cy - arrow_len)], fill="blue", width=20)
@@ -201,12 +192,12 @@ if uploaded_file is not None:
             draw_sim = ImageDraw.Draw(img_sim)
 
             if force_magnitude > 0:
-                # A. 외력 벡터 (초록색)
+                # A. 외력 벡터 (초록색, 뚱뚱하고 길게)
                 dx = int(arrow_len * math.cos(angle_rad))
                 dy = int(arrow_len * math.sin(angle_rad))
                 start_x, start_y = cx - dx, cy + dy
 
-                draw_sim.line([(start_x, start_y), (cx, cy)], fill="green", width=10)
+                draw_sim.line([(start_x, start_y), (cx, cy)], fill="green", width=10) # 외력 화살표 (두께 20)
                 draw_sim.text((start_x - 10, start_y - 45), f"외력 F: {force_magnitude:,.0f}N ({force_angle}°)", fill="green", font=font)
 
                 # B. 수평 방향 상쇄력 / 마찰력 (보라색)
