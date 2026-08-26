@@ -8,8 +8,8 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🤖 세상의 모든 물체: AI 비전 물리 분석기")
-st.write("사진을 올리면 **Gemini AI**가 사진 속 물체를 분석하고, 눈에 보이지 않는 힘과 물리 법칙을 계산해 드립니다!")
+st.title("🤖 세상의 모든 물체: AI 물리 분석기")
+st.write("내가 보고 있는 이 물체에는 지금 어떤 힘이 작용하고 있을까.. 궁금하지 않으셨나요? 사진을 업로드 하시면 **Gemini AI**가 사진 속 물체를 분석하고, 눈에 보이지 않는 힘과 물리 법칙을 계산해 드립니다!")
 
 # 💡 Streamlit Secrets에서 API 키를 자동으로 안전하게 가져옴
 try:
@@ -33,7 +33,7 @@ if uploaded_file is not None:
             with st.spinner("🤖 AI가 사진을 정밀 분석하고 물리 법칙을 계산 중입니다..."):
                 try:
                     genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-2.5-flash')
+                    model = genai.GenerativeModel('gemini-3.6-flash')
                     
                     prompt = """
                     당신은 물리학자이자 AI 비전 분석가입니다. 업로드된 사진 속 물체를 보고 다음 항목들을 분석해주세요:
