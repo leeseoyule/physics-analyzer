@@ -116,8 +116,8 @@ if uploaded_file is not None:
             w, h = image.size
             cx, cy = w // 2, h // 2
             
-            # 화살표 길이를 물체 크기 수준(이미지 치수의 35%)으로 설정
-            arrow_len = int(min(w, h) * 0.35)
+            # 화살표 길이를 물체 크기 수준(이미지 치수의 80%)으로 설정
+            arrow_len = int(min(w, h) * 0.8)
             
             try:
                 font = ImageFont.truetype("DejaVuSans-Bold.ttf", 24) # 폰트 크기 확대
@@ -125,10 +125,10 @@ if uploaded_file is not None:
                 font = ImageFont.load_default()
             
             # 1. 평형 상태 이미지 (중력 & 수직항력)
-            draw_eq.line([(cx, cy), (cx, cy + arrow_len)], fill="red", width=8) # 뚱뚱한 두께(8)
+            draw_eq.line([(cx, cy), (cx, cy + arrow_len)], fill="red", width=15) # 뚱뚱한 두께(20)
             draw_eq.text((cx + 20, cy + arrow_len // 2), f"중력\n({gravity_force:,.0f}N)", fill="red", font=font)
             
-            draw_eq.line([(cx, cy), (cx, cy - arrow_len)], fill="blue", width=8)
+            draw_eq.line([(cx, cy), (cx, cy - arrow_len)], fill="blue", width=20)
             draw_eq.text((cx + 20, cy - arrow_len // 2 - 30), f"수직항력\n({gravity_force:,.0f}N)", fill="blue", font=font)
             
             # 2. 시뮬레이션 이미지 (기존 힘 + 외력 + 상쇄되는 힘 동시 표시)
@@ -141,12 +141,12 @@ if uploaded_file is not None:
                 dy = int(arrow_len * math.sin(angle_rad))
                 start_x, start_y = cx - dx, cy + dy
                 
-                draw_sim.line([(start_x, start_y), (cx, cy)], fill="green", width=10) # 외력 화살표 (두께 10)
+                draw_sim.line([(start_x, start_y), (cx, cy)], fill="green", width=10) # 외력 화살표 (두께 20)
                 draw_sim.text((start_x - 10, start_y - 45), f"외력 F: {force_magnitude:,.0f}N ({force_angle}°)", fill="green", font=font)
                 
                 # B. 수평 방향 상쇄력 / 마찰력 (보라색)
                 counter_x = cx + int(arrow_len * 0.8 * (-1 if horizontal_force >= 0 else 1))
-                draw_sim.line([(cx, cy + 20), (counter_x, cy + 20)], fill="purple", width=8)
+                draw_sim.line([(cx, cy + 20), (counter_x, cy + 20)], fill="purple", width=20)
                 draw_sim.text((counter_x if counter_x < cx else cx, cy + 30), f"상쇄/마찰력\n({counter_horizontal_force:+,.0f}N)", fill="purple", font=font)
                 
                 # C. 수직 분해 및 변동된 수직항력 (주황색)
