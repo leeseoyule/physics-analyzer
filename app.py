@@ -7,7 +7,7 @@ import math
 # 페이지 설정
 st.set_page_config(page_title="범용 스마트 벡터 물리 시뮬레이터", page_icon="🪨", layout="wide")
 
-st.title("🌍 범용 스마트 벡터 물리 & 힘 시뮬레이터")
+st.title("스마트 벡터 물리 & 힘 시뮬레이터")
 st.write("어떤 물체 사진이든 업로드하고, 무게를 설정한 뒤 **외력의 크기(최대 2000N)**와 각도에 따른 종합적인 힘의 상쇄 및 벡터 분해 시뮬레이션을 확인해보세요!")
 
 try:
@@ -23,7 +23,7 @@ if uploaded_file is not None:
     image = Image.open(uploaded_file)
     
     st.markdown("---")
-    st.subheader("⚙️ 1단계: 물체 및 무게 설정 방식 선택")
+    st.subheader("물체 및 무게 설정 방식 선택")
     
     weight_mode = st.radio(
         "물체의 이름과 무게를 어떻게 설정하시겠습니까?", 
@@ -46,10 +46,10 @@ if uploaded_file is not None:
         with col_m2:
             actual_mass = st.number_input("물체의 질량 (kg)", min_value=0.01, max_value=1000000.0, value=5000.0, step=10.0)
     else:
-        st.info("💡 'AI에게 추정 맡기기'를 선택하셨습니다. 아래 분석 버튼을 누르면 AI가 사진을 판독합니다.")
+        st.info("'AI에게 추정 맡기기'를 선택하셨습니다. 아래 분석 버튼을 누르면 AI가 사진을 판독합니다.")
         
         if not st.session_state.get("ai_analyzed", False):
-            if st.button("🤖 AI로 물체 인식 및 무게 자동 추정 실행"):
+            if st.button("AI로 물체 인식 및 무게 자동 추정 실행"):
                 with st.spinner("AI가 사진 속 물체를 분석하고 이름과 질량을 추정하는 중..."):
                     try:
                         genai.configure(api_key=API_KEY)
@@ -70,13 +70,13 @@ if uploaded_file is not None:
         if st.session_state.get("ai_analyzed", False):
             object_name = st.session_state.get("ai_name", "물체")
             actual_mass = st.session_state.get("ai_mass", 100.0)
-            st.success(f"✨ AI 분석 완료! 인식된 물체: **{object_name}** / 추정 질량: **{actual_mass:,.1f} kg**")
+            st.success(f"AI 분석 완료! 인식된 물체: **{object_name}** / 추정 질량: **{actual_mass:,.1f} kg**")
         else:
             object_name = "AI 분석 대기 중인 물체"
             actual_mass = 1000.0
 
     st.markdown("---")
-    st.subheader("🎯 2단계: 외부 힘(Vector Force) 사용자 정의 설정")
+    st.subheader("외부 힘(Vector Force) 사용자 정의 설정")
     
     col_f1, col_f2 = st.columns(2)
     with col_f1:
@@ -94,7 +94,7 @@ if uploaded_file is not None:
         )
 
     # 물리 시뮬레이션 실행 버튼
-    if st.button("🚀 벡터 분해 및 물리 시뮬레이션 실행"):
+    if st.button("벡터 분해 및 물리 시뮬레이션 실행"):
         with st.spinner("삼각함수 벡터 분해 및 상쇄 시뮬레이션 생성 중..."):
             g = 9.8
             gravity_force = actual_mass * g # 중력 (N)
@@ -116,8 +116,8 @@ if uploaded_file is not None:
             w, h = image.size
             cx, cy = w // 2, h // 2
             
-            # 화살표 길이를 물체 크기 수준(이미지 치수의 80%)으로 설정
-            arrow_len = int(min(w, h) * 0.8)
+            # 화살표 길이를 물체 크기 수준(이미지 치수의 60%)으로 설정
+            arrow_len = int(min(w, h) * 0.6)
             
             try:
                 font = ImageFont.truetype("DejaVuSans-Bold.ttf", 24) # 폰트 크기 확대
@@ -159,15 +159,15 @@ if uploaded_file is not None:
             col1, col2 = st.columns(2)
             
             with col1:
-                st.subheader("📌 1. 기본 힘의 평형 상태")
+                st.subheader("기본 힘의 평형 상태")
                 st.image(img_eq, caption=f"'{object_name}' 정적 평형", use_container_width=True)
                 
             with col2:
-                st.subheader("🕹️ 2. 힘의 상쇄 및 벡터 분해 시뮬레이션")
+                st.subheader("힘의 상쇄 및 벡터 분해 시뮬레이션")
                 st.image(img_sim, caption=f"외력 크기: {force_magnitude}N / 각도: {force_angle}°", use_container_width=True)
             
             # 상세 분석 리포트
-            st.markdown("### 📊 정밀 힘의 상쇄 및 벡터 분해 리포트")
+            st.markdown("### 정밀 힘의 상쇄 및 벡터 분해 리포트")
             c_m1, c_m2, c_m3 = st.columns(3)
             with c_m1:
                 st.metric(label="설정된 외력 (Force)", value=f"{force_magnitude:,.1f} N ({force_angle}°)")
