@@ -152,4 +152,4 @@ if uploaded_file is not None:
                         prompt = '이 사진 속의 주요 물체를 분석해줘. 다음 정보를 반드시 JSON 형식으로만 답해줘. 다른 말은 쓰지 마. 1. "name": 물체의 이름 2. "mass": 이 물체의 실제 대략적인 질량 (kg 단위 숫자만). 형식 예시: {"name": "흔들바위", "mass": 5000}'
 
                         res = model.generate_content([prompt, image])
-                        clean_text = res.text.replace("```json", "").replace("
+                        clean_text = res.text.replace("```json", "").strip()
